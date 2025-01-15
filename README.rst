@@ -113,8 +113,6 @@ Render out an Element's HTML:
     >>> about.html
     '<li aria-haspopup="true" class="tier-1 element-1 " id="about">\n<a class="" href="/about/" title="">About</a>\n<ul aria-hidden="true" class="subnav menu" role="menu">\n<li class="tier-2 element-1" role="treeitem"><a href="/about/apps/" title="">Applications</a></li>\n<li class="tier-2 element-2" role="treeitem"><a href="/about/quotes/" title="">Quotes</a></li>\n<li class="tier-2 element-3" role="treeitem"><a href="/about/gettingstarted/" title="">Getting Started</a></li>\n<li class="tier-2 element-4" role="treeitem"><a href="/about/help/" title="">Help</a></li>\n<li class="tier-2 element-5" role="treeitem"><a href="http://brochure.getpython.info/" title="">Python Brochure</a></li>\n</ul>\n</li>'
 
-
-
 Select Elements within Elements:
 
 .. code-block:: pycon
@@ -128,7 +126,6 @@ Search for links within an element:
 
     >>> about.absolute_links
     {'http://brochure.getpython.info/', 'https://www.python.org/about/gettingstarted/', 'https://www.python.org/about/', 'https://www.python.org/about/quotes/', 'https://www.python.org/about/help/', 'https://www.python.org/about/apps/'}
-
 
 Search for text on the page:
 
@@ -144,7 +141,7 @@ More complex CSS Selector example (copied from Chrome dev tools):
     >>> r = session.get('https://github.com/')
     >>> sel = 'body > div.application-main > div.jumbotron.jumbotron-codelines > div > div > div.col-md-7.text-center.text-md-left > p'
     >>> print(r.html.find(sel, first=True).text)
-    GitHub is a development platform inspired by the way you work. From open source to business, you can host and review code, manage projects, and build software alongside millions of other developers.
+    GitHub is a development platform inspired by the way you work. From open source to business, you can host and review code, manage projects, and build software alongside millions of other developers.
 
 XPath is also supported:
 
@@ -244,6 +241,53 @@ You can also use this library without Requests:
     >>> html.links
     {'https://httpbin.org'}
 
+Structured Data Extraction
+========================
+
+Extract structured data from repeated HTML patterns:
+
+.. code-block:: pycon
+
+    >>> from requests_html import HTMLSession, ExtractorPattern
+    >>> session = HTMLSession()
+    >>> r = session.get('https://example.com/products')
+    
+    >>> # Define extraction pattern
+    >>> pattern = ExtractorPattern(
+    ...     selector=".product-card",
+    ...     fields={
+    ...         "title": ".product-title",
+    ...         "price": ".price",
+    ...         "description": ".description"
+    ...     },
+    ...     required_fields=["title", "price"]
+    ... )
+    
+    >>> # Extract structured data
+    >>> products = r.html.extract_structured_data(pattern)
+    >>> products[0]
+    {'title': 'Example Product', 'price': '$99.99', 'description': 'A great product'}
+
+You can also extract data from elements you've already selected:
+
+.. code-block:: pycon
+
+    >>> product_section = r.html.find('.products-section', first=True)
+    >>> products = product_section.extract_structured_data(pattern)
+
+The extractor supports required fields and will skip items missing those fields:
+
+.. code-block:: pycon
+
+    >>> pattern = ExtractorPattern(
+    ...     selector=".article",
+    ...     fields={
+    ...         "title": "h2",
+    ...         "date": ".published-date",
+    ...         "author": ".author-name"
+    ...     },
+    ...     required_fields=["title", "date"]  # Articles must have title and date
+    ... )
 
 Installation
 ============

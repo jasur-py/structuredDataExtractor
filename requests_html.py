@@ -21,6 +21,10 @@ from lxml.html.soupparser import fromstring as soup_parse
 from parse import search as parse_search
 from parse import findall, Result
 from w3lib.encoding import html_to_unicode
+from typing import Dict, List, Optional, Union
+from requests_html import HTMLSession, HTML
+from dataclasses import dataclass
+
 
 DEFAULT_ENCODING = 'utf-8'
 DEFAULT_URL = 'https://example.org/'
@@ -843,3 +847,76 @@ class AsyncHTMLSession(BaseSession):
         ]
         done, _ = self.loop.run_until_complete(asyncio.wait(tasks))
         return [t.result() for t in done]
+
+
+@dataclass
+class ExtractorPattern:
+    selector: str
+    fields: Dict[str, str]
+    required_fields: Optional[List[str]] = None
+
+class StructuredExtractor:
+    """
+    A utility class to extract structured data from repeated HTML patterns.
+    This extends requests-html's capabilities for handling common web scraping patterns.
+    """
+    
+    def __init__(self, html: HTML):
+        self.html = html
+
+    def extract_structured_data(
+        self,
+        pattern: ExtractorPattern,
+        limit: Optional[int] = None
+    ) -> List[Dict[str, str]]:
+        """
+        Extracts structured data from HTML based on defined patterns.
+        
+        Args:
+            pattern: ExtractorPattern defining the selection rules
+            limit: Optional maximum number of items to extract
+            
+        Returns:
+            List of dictionaries containing the extracted data
+        """
+        results = []
+        elements = self.html.find(pattern.selector, first=False)
+        
+        if limit:
+            elements = elements[:limit]
+            
+        for element in elements:
+            item_data = {}
+            is_valid = True
+            
+            for field_name, field_selector in pattern.fields.items():
+                field_element = element.find(field_selector, first=True)
+                
+                if field_element:
+                    item_data[field_name] = field_element.text.strip()
+                elif pattern.required_fields and field_name in pattern.required_fields:
+                    is_valid = False
+                    break
+                else:
+                    item_data[field_name] = ""
+                    
+            if is_valid:
+                results.append(item_data)
+                
+        return results
+
+    @classmethod
+    def from_url(cls, url: str) -> 'StructuredExtractor':
+        """
+        Creates a StructuredExtractor instance from a URL.
+        
+        Args:
+            url: The URL to fetch and parse
+            
+        Returns:
+            StructuredExtractor instance
+        """
+        session = HTMLSession()
+        r = session.get(url)
+        return cls(r.html)
+    
