@@ -4,7 +4,7 @@ from urllib.parse import urlparse, urlunparse, urljoin
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures._base import TimeoutError
 from functools import partial
-from typing import Set, Union, List, MutableMapping, Optional
+from typing import Set, Union, List, MutableMapping, Optional, Dict
 
 import pyppeteer
 import requests
@@ -21,8 +21,7 @@ from lxml.html.soupparser import fromstring as soup_parse
 from parse import search as parse_search
 from parse import findall, Result
 from w3lib.encoding import html_to_unicode
-from typing import Dict, List, Optional, Union
-from requests_html import HTMLSession, HTML
+
 from dataclasses import dataclass
 
 
